@@ -105,3 +105,28 @@ STATUS: PARTIAL — one real blocker found (upstream, not our code). Everything 
 AWAITING PM REVIEW.
 
 ---
+
+## [PM] Checkpoint 0 review — 4 Sep
+
+**APPROVED.** Bootstrap accepted as-is; the pytest blocker is now resolved.
+
+Decision on the BLOCKED item: **Option 1 — run direct-mode tests via WSL.**
+
+Resolution carried out and verified:
+- WSL Ubuntu was already present on this machine (Python 3.12.3).
+- `python3.12-venv` isn't installed and installing it needs a sudo password not available to
+  the agent. Worked around without sudo: `python3 -m venv --without-pip .venv-wsl` +
+  `get-pip.py` bootstrap — no system packages touched, no site-packages patched.
+- `pytest tests/direct/ -v` under `.venv-wsl/bin/pytest` -> **43/43 PASSED**, confirming the
+  root-cause diagnosis (Windows-only `os.unlink`-while-open failure) was correct and fully
+  resolved by running on a POSIX filesystem.
+- `.gitignore` updated to exclude `.venv-wsl`.
+- `AGENT_INSTRUCTIONS.md` updated (new rule 6a) so this resolution is standing guidance for
+  Task 3 and beyond — direct-mode pytest always runs through WSL from here on; `genvm-lint`
+  and integration tests (`gltest`) keep running natively on Windows.
+- Bootstrap + this fix committed to git as the project baseline.
+
+**Coding agent: proceed to TASK 1 (contract specification). Stop at Checkpoint 1 — the
+`agent_config` schema choice is mine to make, not yours.**
+
+---

@@ -16,6 +16,14 @@ You are the coding agent. A separate Project Manager supervises you through `PRO
 6. **Use the GenLayer skills available in this environment** rather than recalling API shapes
    from memory: `genlayer-dev:write-contract`, `genlayer-dev:genlayer-cli`,
    `genlayer-dev:direct-tests`, `genlayer-dev:integration-tests`, `genlayer-dev:genvm-lint`.
+6a. **Environment note (resolved at Checkpoint 0):** `pytest tests/direct/` fails on native
+   Windows — upstream bug in `genlayer-test==0.29.2`'s loader (`os.unlink` on a file whose fd
+   is still open via `os.dup2`; valid on POSIX, not on Windows). Confirmed fixed by running
+   the same suite under WSL Ubuntu (43/43 pass there vs 10/43 native). Run all
+   `pytest tests/direct/` invocations through the WSL venv at `.venv-wsl/` (created via
+   `python3 -m venv --without-pip` + `get-pip.py`, since `python3.12-venv` isn't installed and
+   we're avoiding sudo). `genvm-lint` and `gltest` (integration) continue to run natively on
+   Windows with `PYTHONIOENCODING=utf-8` set — only the direct-mode pytest path needs WSL.
 7. **Never invent a GenLayer API.** If unsure of a signature, consult the docs/skills and
    cite what you found in the report.
 8. **Pin concrete GenVM runner version hashes.** Never `test` or `latest` aliases.
