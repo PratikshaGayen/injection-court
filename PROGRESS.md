@@ -267,3 +267,89 @@ locally isn't surprised. Not urgent — flag again at Task 7, don't act now.
 `genvm-lint` run natively on Windows with `PYTHONIOENCODING=utf-8`. Stop at Checkpoint 3.**
 
 ---
+
+## [Checkpoint 3] Tests — 4 Sep
+
+STATUS: PARTIAL — direct-mode complete and fully passing; integration blocked by local
+simulator infrastructure, not contract code.
+
+### Done
+- `tests/direct/test_injection_court.py`: 17 tests — `file_case` success/id-increment/all
+  four input-validation rejections, `get_case`/`list_cases` (empty + populated + unknown-id),
+  and **one `investigate()` test per verdict category** (developer/user/agent/unforeseeable)
+  using `direct_vm.mock_web` + `direct_vm.mock_llm`, plus re-investigation and unknown-case
+  reverts. **All 17/17 pass** via `.venv-wsl/bin/pytest tests/direct/test_injection_court.py`.
+- Real bug found and fixed while writing these tests: the contract used
+  `gl.message.datetime`, an API that does not exist. Introspected `dir(gl.message)` in a
+  running direct-mode test — real attributes are `chain_id, contract_address, count, index,
+  origin_address, sender_address, value` — and `dir(genlayer.gl.vm)` — no timestamp helper
+  either. Removed the invented `filed_at`/`resolved_at` fields from `Case` (they were an
+  addition beyond `README.md`'s required signatures, not locked scope) rather than fake a
+  value. Corrected `docs/CONTRACT_SPEC.md` §1 and §5 to match. Re-linted after the fix — no
+  new issues, same known false positive as before.
+- `tests/integration/test_injection_court.py` written: deploys, files a case against a real
+  URL, runs `investigate`, asserts verdict ∈ the four values and reasoning is non-empty —
+  matching TASK 3b exactly and the boilerplate's own integration-test conventions
+  (`get_contract_factory`, `load_fixture`, `tx_execution_succeeded`).
+
+### Commands run and their real output
+- `.venv-wsl/bin/pytest tests/direct/test_injection_court.py -v` -> **17/17 PASSED**.
+- `genvm-lint check contracts/injection_court.py` (after the datetime fix) -> same single
+  known finding as Checkpoint 2 (2 "not reachable from equivalence principle block" false
+  positives), no new issues.
+- `gltest tests/integration/test_injection_court.py -v -s` -> **FAIL**, 3 attempts, ~2.5 min
+  each: `DeploymentError: ... did not reach desired status 'ACCEPTED' ... result_name:
+  "NO_MAJORITY"`. This fails on the bare `__init__` deploy transaction itself — before any
+  code of ours that touches `gl.nondet.web`/`gl.nondet.exec_prompt` runs.
+- Diagnosed via `docker logs genlayer-jsonrpc-1`: consensus fails with
+  `Exception: process is dead 1` from `/app/backend/validators/web.py:71
+  verify_for_read()` — the simulator backend's own internal web-verification subprocess
+  exits immediately with code 1 during every validator's pre-execution snapshot, regardless
+  of whether the contract being deployed uses web access at all.
+- Attempt 1: confirmed root cause was originally *also* `"no valid backend detected"` /
+  `"no provider with image AND json support detected"` (no LLM configured) — user pulled
+  `llama3` into the running Ollama container; `genlayer config get` now shows
+  `defaultOllamaModel: "llama3"`. Retried -> same NO_MAJORITY, but the LLM-backend error was
+  gone from the logs; the `process is dead 1` web-module error was the one still occurring.
+- Attempt 2: `docker restart genlayer-webdriver-1` (the Selenium/Firefox grid container) ->
+  came back healthy, container's own logs show a clean start -> retried -> same failure.
+- Attempt 3: `docker restart genlayer-jsonrpc-1` (the backend container that actually owns
+  `self._process` in `web.py`) -> came back healthy -> retried -> **identical failure**,
+  same `process is dead 1` at the same line.
+
+### Decisions I had to make
+- Stopped after three restart-and-retry cycles (~8 minutes of test cycles alone) rather than
+  continuing to debug the simulator's internal subprocess management — this is infrastructure
+  internals unrelated to our contract code (confirmed: fails even on a deploy with zero
+  `gl.nondet.*` calls in `__init__`), and deeper debugging would mean reading/patching the
+  simulator's own Python source inside the container, well outside TASK 3's scope.
+- Did not weaken or skip the integration test to force a pass — it is written correctly and
+  will validate real end-to-end behavior once the simulator's web module is healthy.
+
+### BLOCKED
+- **Local GenLayer simulator's web-verification subprocess crashes immediately (exit code 1)
+  on every validator snapshot**, blocking all integration-mode deploys and calls — not
+  specific to our contract. Options for the PM:
+  1. Deeper simulator debugging: `docker exec` into `genlayer-jsonrpc-1` and inspect what
+     `/app/backend/validators/web.py`'s `self._process` actually is and why it exits 1 (likely
+     a missing browser binary or a Docker-Desktop-on-Windows networking/permission quirk with
+     the webdriver grid at `genlayer-webdriver-1:4444`).
+  2. Full simulator reset: `genlayer stop` then `genlayer up --reset-validators --reset-db`
+     (or `--reset-validators --numValidators 5`) for a clean stack, in case state from an
+     earlier failed run is wedged.
+  3. Defer full integration verification to TASK 4 (`genlayer deploy` to
+     testnet-bradbury — the CLI's already-configured network — instead of localnet) or to the
+     TASK 6 demo rehearsal, and accept direct-mode's 17/17 (all four verdict categories, real
+     equivalence-principle logic exercised) as sufficient evidence of correctness for now,
+     given the 17 Sep deadline.
+  I have not acted on any of these unilaterally — recommend option 2 first (cheap, might just
+  work), falling back to option 3 given the time cost already sunk here.
+
+### Ready for
+- TASK 4 (deploy) is not blocked by this — deploying to testnet-bradbury doesn't go through
+  the local simulator at all. If the PM wants a working localnet integration test before
+  Task 4, option 2 above is the next thing to try.
+
+AWAITING PM REVIEW.
+
+---

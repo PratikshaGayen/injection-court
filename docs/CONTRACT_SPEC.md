@@ -29,9 +29,18 @@ class Case:
     status: str                # "filed" | "resolved"
     verdict: str                # "" until resolved, then one of the four values
     reasoning: str               # "" until resolved
-    filed_at: str                 # ISO 8601, set from gl.message context at file time
-    resolved_at: str              # "" until resolved
 ```
+
+**Correction made during Task 2 implementation:** this section originally also specified
+`filed_at`/`resolved_at` ISO-8601 timestamp fields, set from a `gl.message.datetime` call.
+That API does not exist — confirmed by introspecting `dir(gl.message)` in a running direct-mode
+test, which returned `['chain_id', 'contract_address', 'count', 'index', 'origin_address',
+'sender_address', 'value']`, and `dir(genlayer.gl.vm)`, which exposes no timestamp/datetime
+helper either. Per standing rule 7 ("never invent a GenLayer API"), the fields were removed
+rather than faked. Neither field was required by `README.md`'s method signatures — they were
+an addition in this spec, not part of the locked scope — so removing them does not reduce
+scope. If wall-clock ordering is wanted later, `case_id`'s numeric suffix already gives a
+total, deterministic filing order without needing a timestamp API.
 
 ```python
 class InjectionCourt(gl.Contract):
@@ -235,7 +244,6 @@ def investigate(self, case_id: str) -> dict:
     case.status = "resolved"
     case.verdict = result["verdict"]
     case.reasoning = result["reasoning"]
-    case.resolved_at = <timestamp>
     return {"verdict": result["verdict"], "reasoning": result["reasoning"]}
 ```
 

@@ -19,8 +19,6 @@ class Case:
     status: str
     verdict: str
     reasoning: str
-    filed_at: str
-    resolved_at: str
 
 
 class InjectionCourt(gl.Contract):
@@ -112,8 +110,6 @@ prefix or suffix. This result should be perfectly parsable by a JSON parser with
             status="filed",
             verdict="",
             reasoning="",
-            filed_at=str(gl.message.datetime),
-            resolved_at="",
         )
         self.cases[case_id] = case
         return case_id
@@ -152,7 +148,6 @@ prefix or suffix. This result should be perfectly parsable by a JSON parser with
         case.status = "resolved"
         case.verdict = result["verdict"]
         case.reasoning = result["reasoning"]
-        case.resolved_at = str(gl.message.datetime)
 
         return {"verdict": result["verdict"], "reasoning": result["reasoning"]}
 
@@ -170,8 +165,6 @@ prefix or suffix. This result should be perfectly parsable by a JSON parser with
             "status": case.status,
             "verdict": case.verdict,
             "reasoning": case.reasoning,
-            "filed_at": case.filed_at,
-            "resolved_at": case.resolved_at,
         }
 
     @gl.public.view
@@ -186,8 +179,6 @@ prefix or suffix. This result should be perfectly parsable by a JSON parser with
                 "status": case.status,
                 "verdict": case.verdict,
                 "reasoning": case.reasoning,
-                "filed_at": case.filed_at,
-                "resolved_at": case.resolved_at,
             }
             for case in self.cases.values()
         ]
