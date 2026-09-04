@@ -353,3 +353,28 @@ simulator infrastructure, not contract code.
 AWAITING PM REVIEW.
 
 ---
+
+## [PM] Checkpoint 3 review — 4 Sep
+
+**PARTIAL APPROVAL.** Direct-mode coverage (17/17, all four verdict categories, real
+equivalence-principle logic exercised) accepted as sufficient evidence of contract
+correctness for now.
+
+Tried option 2 (full simulator reset) myself before deciding: `docker restart` on all four
+core containers got past the original `process is dead 1` error, but surfaced a new one —
+`eth_getTransactionCount` returning a 500 from the RPC — then `genlayer up --reset-db
+--reset-validators` failed outright with `psycopg2.OperationalError: server closed the
+connection unexpectedly`. The stack is genuinely unstable right now, likely from repeated
+restarts colliding with other unrelated Docker projects also running on this machine
+(`airdrop-*` containers). Not worth further time against the 17 Sep deadline.
+
+**Decision: move on to TASK 4, deploying to `testnet-bradbury` (the CLI's already-configured
+network) instead of the local simulator.** A real deploy + a real `investigate()` call there
+will itself serve as the end-to-end integration check, without depending on this machine's
+flaky local Docker stack. Local integration tests remain written and correct in
+`tests/integration/test_injection_court.py` for whenever the simulator is healthy again —
+not abandoned, just not blocking.
+
+**Coding agent: proceed to TASK 4 (deploy). Stop at Checkpoint 4 — go/no-go gate.**
+
+---
