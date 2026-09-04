@@ -130,3 +130,58 @@ Resolution carried out and verified:
 `agent_config` schema choice is mine to make, not yours.**
 
 ---
+
+## [Checkpoint 1] Contract specification — 4 Sep
+
+STATUS: COMPLETE
+
+### Done
+- `docs/CONTRACT_SPEC.md` written: storage model, all four method signatures, three
+  `agent_config` schema options with trade-offs and a recommendation, a full validator prompt
+  draft with an explicit boundary rule between `agent` and `unforeseeable`, and the
+  equivalence-principle implementation approach.
+
+### Commands run and their real output
+- None — this task is design-only, no code or tests to execute.
+
+### Decisions I had to make
+- Grounded every API reference (`gl.nondet.web`, `gl.nondet.exec_prompt`, `gl.eq_principle`,
+  `gl.vm.run_nondet`, the leader/validator partial-field-matching pattern) in the boilerplate's
+  own `contracts/football_bets.py`, `contracts/PatternTest.py`, and `CLAUDE.md` API reference
+  rather than recalling from memory, per standing rule 7.
+- Chose `gl.vm.run_nondet` with a custom `validator_fn` over `gl.eq_principle.strict_eq()` for
+  the equivalence principle, because `strict_eq` would compare the whole JSON output
+  (including `reasoning`), which contradicts the already-locked "verdict field only" decision.
+  This is not a new decision — it's the correct implementation of one already made.
+- Recommended Option C (structured core + free-text `additional_context`) for `agent_config`
+  over pure free-text (breaks consensus on what claims were even made) or pure structured
+  (too rigid for the range of real agent architectures). Reasoning is in §3 of the spec.
+
+### BLOCKED
+- None.
+
+### Ready for
+- PM decision on the `agent_config` schema (§3 of `docs/CONTRACT_SPEC.md`).
+
+AWAITING PM REVIEW.
+
+---
+
+## [PM] Checkpoint 1 review — 4 Sep
+
+**APPROVED. Schema: Option C (structured core + free-text `additional_context`).**
+
+Rationale for picking C over A/B: the free-text field carries zero consensus risk because the
+equivalence principle already excludes everything except `verdict` from cross-validator
+comparison (§5) — so the objection to free text ("breaks validator consensus") that `README.md`
+raises for the *verdict* doesn't apply here. Meanwhile pure-structured (B) risks forcing real
+incidents into fields that don't fit them, which would show up later as filers unable to make
+their case at all. C gets the checkable claims of B without B's rigidity.
+
+Validator prompt and equivalence-principle approach also approved as drafted — no changes
+requested.
+
+**Coding agent: proceed to TASK 2 (contract implementation), using Option C from
+`docs/CONTRACT_SPEC.md` §3. Stop at Checkpoint 2.**
+
+---
