@@ -378,3 +378,132 @@ not abandoned, just not blocking.
 **Coding agent: proceed to TASK 4 (deploy). Stop at Checkpoint 4 — go/no-go gate.**
 
 ---
+
+## [Checkpoint 4] Deploy — 4 Sep
+
+STATUS: COMPLETE — real end-to-end success on a live testnet.
+
+### Done
+- **Network:** `testnet-bradbury` (Genlayer Bradbury Testnet). Selected because
+  `~/.genlayer/genlayer-config.json` was already pre-configured for it before this session,
+  with an unlocked, funded account (`session-deployer`, ~9.98 GEN testnet tokens — no real
+  value). Switched via `genlayer network set testnet-bradbury`.
+- **Deployed.** `genlayer deploy --contract contracts/injection_court.py`:
+  - **Contract address:** `0x7b8f4F1a73ceBb088880F94815E76C10f4c0C306`
+  - **Deploy tx hash:** `0x2dea91ddfb0c70e888960a9e1851151ee528087059b9615bc7b33e704576e721`
+  - `status_name: 'ACCEPTED'`, `resultName: 'AGREE'`, `txExecutionResultName:
+    'FINISHED_WITH_RETURN'` — all validators agreed on the deploy.
+- **Filed a real case and ran `investigate()` end to end.** Result:
+  - `case_000001`, `status: 'resolved'`, **`verdict: 'developer'`**
+  - Reasoning (verbatim, from the deployed contract's live storage): *"The agent's
+    configuration has instruction_content_separation=false, allowing untrusted page content
+    to act as instructions, and user_confirmation_required_for=[] so no confirmation is
+    needed before send_payment. With tool_access_scope including send_payment and
+    input_trust_boundary set to untrusted_web_content, the agent was configured to
+    autonomously execute payments based on untrusted page content. A reasonable configuration
+    change such as requiring user confirmation before payments or separating instructions
+    from content would have prevented the $1000 transfer. The fetched page, though appearing
+    as a legitimate README, is untrusted web content and could contain hidden prompt
+    injection."*
+  - This is a real, coherent verdict grounded in the exact structured fields of the
+    `agent_config` schema (§3 Option C), confirming the validator prompt's boundary logic
+    works as designed — a `developer` case (missing confirmation + no content/instruction
+    separation) was correctly distinguished, not defaulted to `agent`.
+  - `investigate` tx: `0x73b778e6a20a00e70a237d9aa5fb0cce6f780775f37a81fed76892142de98ca7`,
+    `status_name: 'ACCEPTED'`, took **62.8 seconds** wall-clock (deploy + fetch real page via
+    `gl.nondet.web.render` + real LLM call + validator consensus).
+
+### Real bug found and worked around: CLI `--args` cannot pass a literal JSON-object-shaped
+string
+- `genlayer write ... --args <url> '<json-object-text>' <description>` **silently
+  mis-executed**: `FINISHED_WITH_ERROR`. Root cause, confirmed by reading the CLI's own
+  source (`parseArg` in `genlayer/dist/index.js`): it runs `JSON.parse()` on every arg, and
+  if the result is an object/array it auto-coerces to that type — so a JSON-shaped string
+  meant for a Python `str` parameter gets silently turned into an actual dict/array
+  parameter instead, a type mismatch with `agent_config: str`.
+- Tried double-encoding (`json.dumps(json_string)`) to make the parse yield a plain string
+  instead — **also fails**, because `parseArg` only uses the parsed value when it's an
+  object/array; for a plain-string parse result it discards the parse and calls
+  `parseScalar` on the *original raw arg text*, so the outer encoding is never stripped —
+  confirmed by reading the case back and seeing the literal escaped-quote text stored
+  on-chain (`case_000000`, left in place as a harmless artifact of this investigation, not
+  removed since the contract has no delete method — matches locked scope, no deletion was
+  ever specified).
+- **Working fix:** bypassed the Node CLI entirely for this call — used the `genlayer-py`
+  Python SDK (`genlayer_py.create_client`/`write_contract`) directly, which takes real typed
+  Python arguments (no JSON-text-through-a-shell-arg step), so `agent_config` arrives as an
+  actual `str`. Confirmed clean by reading it back (`case_000001` — proper unescaped JSON).
+  Needed a signer: generated a fresh disposable local keypair with
+  `genlayer_py.generate_private_key()`/`create_account()` (avoids decrypting the existing
+  keystore, which the CLI has already unlocked for its own use but which `genlayer-py` can't
+  read directly) and funded it with 0.5 GEN from `session-deployer` via `genlayer account
+  send` (in wei: `500000000000000000` — the CLI's decimal-GEN parsing also errors on plain
+  decimals like `0.5`, another minor CLI arg quirk). The private key is disposable-testnet
+  scoped, not committed to any tracked file, holds negligible funds.
+- **Worth noting in the Task 7 submission README:** the CLI's `--args` flag cannot cleanly
+  pass a JSON-object-shaped string to a `str` contract parameter. Anyone else deploying to
+  file a case via the CLI directly (not through our frontend) will hit the same issue and
+  should use the Python SDK or genlayer-js directly instead.
+- Also confirmed `genlayer_py.read_contract` (SDK 0.18.0) has its own unrelated bug
+  (`TypeError: can only concatenate str (not "dict") to str`) — worked around by using
+  `genlayer call` (the CLI) for reads instead, since reads don't go through the broken
+  `--args` encoding path at all. Not investigated further — out of scope, reads aren't
+  blocked.
+
+### Commands run and their real output
+- `genlayer network set testnet-bradbury` -> success.
+- `genlayer account show` -> `session-deployer`, `0x45b94fc0a3bae516f187f40c29c5ebb3b5b79887`,
+  `9.98226702428218095 GEN`, unlocked, active.
+- `genvm-lint check contracts/injection_court.py` -> same single known false-positive finding
+  as Checkpoints 2–3, no new issues.
+- `genlayer deploy --contract contracts/injection_court.py` -> **success**, see above.
+- `genlayer write ... file_case --args ...` (raw JSON text) -> executed but
+  `FINISHED_WITH_ERROR` (silent CLI arg mis-encoding, diagnosed above).
+- Same call, double-JSON-encoded -> executed (`FINISHED_WITH_RETURN`) but stored a mangled
+  string (`case_000000`) — diagnosed as the same underlying CLI limitation.
+- `genlayer_py` direct SDK call -> **`file_case` succeeded cleanly** (`case_000001`).
+- `genlayer_py` direct SDK call -> **`investigate` succeeded**, `status_name: 'ACCEPTED'`,
+  62.8s wall-clock.
+- `genlayer call ... get_case --args case_000001` -> confirmed final state: `resolved`,
+  `verdict: 'developer'`, full reasoning as quoted above.
+
+### Decisions I had to make
+- Used a disposable local keypair rather than decrypting the pre-existing `session-deployer`
+  keystore for the SDK calls — avoids needing a keystore password I don't have, and keeps
+  the pre-existing account's key material untouched by this session. Funded with a small,
+  explicit amount (0.5 GEN, testnet, no real value) via a CLI command the PM can see in this
+  log — not a silent or hidden transfer.
+- Left the malformed `case_000000` in place rather than trying to "clean it up" — the
+  contract has no delete/admin method (matches locked scope; README never specified one), and
+  a malformed-but-harmless test artifact on a testnet is not worth inventing new contract
+  surface to remove.
+
+### BLOCKED
+- None. Task 4 is fully complete.
+
+### Ready for
+- TASK 5 (frontend), pending PM go/no-go per the roadmap's Checkpoint 4 gate.
+
+AWAITING PM REVIEW.
+
+---
+
+## [PM] Checkpoint 4 review — 4 Sep
+
+**GO.** This is exactly the proof the project needed: a real testnet deployment, a real
+fetched URL, a real LLM call, real validator consensus, and a verdict whose reasoning
+correctly cites the specific structured fields that made it a `developer` case rather than
+defaulting to `agent` — the prompt's boundary logic is working as designed, not just
+plausible-sounding.
+
+CLI arg-encoding limitation noted, fix (use `genlayer-py` / `genlayer-js` directly, not
+`--args` with JSON-shaped strings) captured for Task 7. Frontend (Task 5) will use
+`genlayer-js` in the browser directly, not this CLI, so it is not expected to hit the same
+bug — confirm that assumption when Task 5 starts wiring the filing form.
+
+**Contract address for Task 5 to wire against: `0x7b8f4F1a73ceBb088880F94815E76C10f4c0C306`
+on Genlayer Bradbury Testnet.**
+
+**Coding agent: proceed to TASK 5 (frontend). Stop at Checkpoint 5.**
+
+---
