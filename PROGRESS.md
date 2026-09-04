@@ -185,3 +185,85 @@ requested.
 `docs/CONTRACT_SPEC.md` §3. Stop at Checkpoint 2.**
 
 ---
+
+## [Checkpoint 2] Contract implementation — 4 Sep
+
+STATUS: COMPLETE (one lint finding accepted as a known false positive — see below)
+
+### Done
+- `contracts/injection_court.py` written per the approved `docs/CONTRACT_SPEC.md`: `Case`
+  dataclass storage, all four methods (`file_case`, `investigate`, `get_case`, `list_cases`),
+  the exact validator prompt from §4, and the verdict-only equivalence principle from §5.
+- Pinned GenVM runner: `py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6` —
+  the same concrete hash already proven working in the boilerplate's own example contracts
+  (not `test`/`latest`, per standing rule 8). The linter reports a newer hash is available
+  (`5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng`); stayed on the proven one rather
+  than an unverified newer one, given the deadline.
+- Input validation on `file_case`: non-empty http(s) `incident_url`, non-empty
+  `agent_config`/`damage_description`, and `agent_config` must parse as JSON.
+- `investigate` guards against re-investigating a resolved case, and against a malformed
+  LLM verdict (raises before it can enter contract state) — closes the open item flagged in
+  `docs/CONTRACT_SPEC.md`'s "Open item carried to Task 2".
+- No money movement, balances, transfers, or fees anywhere in the contract.
+
+### Commands run and their real output
+- `genvm-lint check contracts/injection_court.py` (first pass) -> **FAIL**: 8 "bare Python
+  exception" warnings-turned-errors + 2 "gl.nondet.* call not reachable from equivalence
+  principle block" errors.
+- Replaced all `raise Exception(...)` with `raise gl.vm.UserError(...)` (both are listed as
+  acceptable in the boilerplate's own `CLAUDE.md`; `UserError` is the more idiomatic form).
+- `genvm-lint check contracts/injection_court.py` (second pass) -> the 8 exception warnings
+  are gone. **2 "not reachable from equivalence principle block" errors remain** on the
+  `gl.nondet.web.render` / `gl.nondet.exec_prompt` calls inside `leader_fn`.
+- To check whether this was a real defect in our code, linted the boilerplate's own
+  `contracts/PatternTest.py` (already proven correct — it passed 43/43 under the WSL fix at
+  Checkpoint 0, using this exact same `run_nondet_unsafe(leader_fn, validator_fn)` pattern):
+  `genvm-lint check contracts/PatternTest.py` -> **same "not reachable from equivalence
+  principle block" error**, on the identical pattern, in code that is known to run correctly.
+
+### Decisions I had to make
+- Treating the "not reachable from equivalence principle block" lint error as a **known
+  false positive in `genvm-linter==0.11.1rc2`'s static analysis** of the
+  `run_nondet_unsafe(leader_fn, validator_fn)` pattern, not a defect in our contract —
+  evidenced by the identical failure on the boilerplate's own working reference code. Did not
+  restructure the equivalence-principle code to silence it, since doing so would mean
+  changing an already-spec-approved, correct design to satisfy a linter bug rather than a
+  real problem — exactly the kind of guess/workaround the standing rules discourage. Flagging
+  transparently instead, same as the Checkpoint 0 pytest finding.
+- This means TASK 2's literal bar ("`genvm-lint check` must pass") is not fully met — 2 of 2
+  remaining findings are the same false positive traced to shared, trusted reference code.
+  Recommend accepting this and proceeding; Task 3's integration tests will be the real
+  correctness check for the equivalence-principle logic, same as they already are for the
+  boilerplate's own contract.
+
+### BLOCKED
+- None — flagging above is informational, not a stop.
+
+### Full contract
+See `contracts/injection_court.py` in the repo (176 lines) — not inlined here to keep this
+report readable; diff is in commit history.
+
+### Ready for
+- TASK 3 (tests), pending PM sign-off on treating the lint finding as accepted-known-issue.
+
+AWAITING PM REVIEW.
+
+---
+
+## [PM] Checkpoint 2 review — 4 Sep
+
+**APPROVED**, including the lint finding disposition. The evidence is sound: the same
+linter version fails the boilerplate's own shipped, test-covered `PatternTest.py` on the
+identical construct, so this is a linter limitation with `run_nondet_unsafe`, not a defect
+introduced here. Restructuring our equivalence-principle code to dodge a linter false
+positive would be optimizing for a tool's opinion over correctness — not acceptable.
+
+Noting for the submission package (Task 7): if time allows, worth a one-line mention in our
+own README that `genvm-lint` currently flags this pattern, so a reviewer running lint
+locally isn't surprised. Not urgent — flag again at Task 7, don't act now.
+
+**Coding agent: proceed to TASK 3 (tests). Remember: `pytest tests/direct/` runs via the
+`.venv-wsl/` WSL venv per rule 6a in `AGENT_INSTRUCTIONS.md`; `gltest` integration tests and
+`genvm-lint` run natively on Windows with `PYTHONIOENCODING=utf-8`. Stop at Checkpoint 3.**
+
+---
