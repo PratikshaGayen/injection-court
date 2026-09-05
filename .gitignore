@@ -25,3 +25,7 @@ __pycache__/
 *.compiled.js
 package-lock.json
 
+
+# local env + build artifacts
+.env.local
+*.tsbuildinfo
