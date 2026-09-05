@@ -107,10 +107,19 @@ def cli_retry(*args: str, attempts: int = 10, delay: float = 6.0) -> str:
 
 
 def submit_write_retry(client, fn_name: str, acct, cargs: list) -> str:
-    """write_contract submission, retrying transient node-capacity rejections."""
+    """write_contract submission, retrying transient node-capacity rejections.
+
+    investigate is submitted with consensus_max_rotations=10: under testnet
+    load a 3-rotation budget consistently timed out; 10 rotations let a full
+    leader+validator round eventually fit (observed live, Checkpoint 6).
+    """
+    rotations = 10 if fn_name == "investigate" else None
     for i in range(10):
         try:
-            return client.write_contract(CONTRACT, fn_name, account=acct, args=cargs)
+            return client.write_contract(
+                CONTRACT, fn_name, account=acct, args=cargs,
+                consensus_max_rotations=rotations,
+            )
         except Exception as e:  # noqa: BLE001 - re-raised unless transient
             if not is_transient(str(e)):
                 raise
