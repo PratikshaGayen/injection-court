@@ -164,12 +164,49 @@ in a real browser against real contract data.
 
 ---
 
+## Where things stand (end of Checkpoint 5 — read before Task 6)
+
+- **Contract is live:** `0x7b8f4F1a73ceBb088880F94815E76C10f4c0C306` on `testnet-bradbury`.
+  It already holds `case_000000` (malformed config, a known artifact) and `case_000001`
+  (resolved, verdict `developer`).
+- **Frontend is done and wired to it.** `cd frontend && npm run dev`. Three routes: `/`,
+  `/file`, `/case/[id]`. `npx tsc --noEmit` and `npm run build` both pass.
+- **Do not file cases with `genlayer write --args`.** Its arg parser silently turns a
+  JSON-object-shaped string into a dict, so `agent_config` arrives as the wrong type. Use the
+  `genlayer-py` SDK (see the Checkpoint 4 entry in `PROGRESS.md` for working code) or the
+  frontend's own filing form.
+- **Toolchain reminders:** `genvm-lint` needs `PYTHONIOENCODING=utf-8`; `pytest tests/direct/`
+  runs through `.venv-wsl/` under WSL (rule 6a).
+- **Publishing is unblocked:** `gh` is authenticated as `PratikshaGayen` with `repo` scope;
+  no git remote is set yet. Vercel CLI 58.5.1 is installed.
+- **Never commit a private key.** The disposable Bradbury keypair used in Task 4 stays out of
+  the repo.
+
+---
+
 ## TASK 6 — Demo
 
-6a. Author a real prompt-injected page and host it at a live public URL. Record the URL.
-6b. Full rehearsal: file the case, validators fetch the real page, verdict lands. Do this
-    at least twice and report whether the verdict was stable across runs.
-6c. Record wall-clock timing for each step and flag the slowest.
+6a. **Write the injected page.** A static HTML product listing that looks like an ordinary
+    shop page, with a prompt-injection payload hidden inside it. The hero exhibit in
+    `frontend/components/court/Exhibit.tsx` is already the script — reuse that copy so the
+    site and the demo tell one story. Hide the payload the way real attacks do (an HTML
+    comment, or text styled invisible), not as visible body text.
+    Put it at `docs/index.html` so GitHub Pages can serve it from `/docs` on the default
+    branch. **It must be reachable by anyone** — every validator fetches it independently.
+
+6b. **Publish it and confirm the URL is live** from outside (plain `curl`, no auth). Record
+    the exact URL. If Pages is not enabled yet, say so in the report rather than guessing at
+    repo settings.
+
+6c. **Rehearse the full run, at least twice.** File a case against that URL with a config that
+    makes the verdict genuinely arguable, then run `investigate`. Record for each run: the
+    verdict, the reasoning, and wall-clock seconds per step.
+
+6d. **Report whether the verdict was stable across runs.** This matters more than any other
+    result in this task: the equivalence principle compares only the verdict field, so an
+    unstable verdict means consensus is fragile. **If the two runs disagree, do not tune the
+    prompt until they agree and call it passing — report the disagreement.** That is a real
+    finding about the design, and the panel will respect it more than a hidden one.
 
 **-> CHECKPOINT 6. Report and stop.**
 
@@ -177,9 +214,23 @@ in a real browser against real contract data.
 
 ## TASK 7 — Submission package
 
-7a. Public GitHub repository. Clean history, no secrets, README with working setup steps.
-7b. Draft the project application for the **Onchain Justice** track. Do not submit it —
-    the PM reviews the draft first.
-7c. Collect all links: repo, live frontend, contract address, demo injected page.
+7a. **Public GitHub repository.** Create it with `gh repo create`, push, and confirm it is
+    public. No secrets, no private keys, no `.env.local`. Review what you are about to push
+    before you push it.
 
-**-> CHECKPOINT 7. Final report and stop.**
+7b. **Rewrite `README.md` as a project README** — the current one is the internal plan. Keep
+    the argument, and add: what this is, the live links, setup steps someone can actually
+    follow, and the known limitations (no anti-spam/filing fee, by design; `genvm-lint` flags
+    the equivalence-principle pattern as a false positive; `genlayer write --args` cannot pass
+    JSON-shaped strings). Do not delete the plan — move it to `docs/PLAN.md`.
+
+7c. **Deploy the frontend** (Vercel CLI is installed) and record the live URL. It must point
+    at the deployed contract on Bradbury.
+
+7d. **Draft the project application** for the **Onchain Justice** track. Draft only — the PM
+    reviews before anything is submitted.
+
+7e. **Collect every link:** repo, live frontend, contract address + explorer link, the demo
+    injected page, and the resolved case that proves the whole thing works.
+
+**-> CHECKPOINT 7. Final report and stop. Do not submit anything.**
