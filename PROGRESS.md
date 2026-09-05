@@ -881,3 +881,157 @@ Cleared for **TASK 7**, which is now a single batched run — see the rewritten 
   (`injection-court.vercel.app`); 7c sets that alias on the deployed project and the URL
   is corrected in-place if the name is unavailable.
 
+
+## [TASK 7 / 7c] Frontend deploy + live verification — 5 Sep
+
+- Production build clean (`npm run build`; routes /, /file, /case/[id], /_not-found).
+- Deployed with Vercel CLI 58.5.1 (`vercel link --project injection-court`, then
+  `vercel --prod --yes`). Before deploying: the Vercel project had **no** env vars —
+  since `NEXT_PUBLIC_*` values are inlined at build time, all six Bradbury values
+  (contract address, RPC, chain id/name/symbol, explorer) were added to the project's
+  **production** environment explicitly. `.env.local` stays local-only and gitignored.
+- **Live URL: https://injection-court.vercel.app** (production alias set on deploy;
+  deployment URL https://injection-court-ltr61zg1m-pratikshagayens-projects.vercel.app).
+- Verified in a real browser against the live URL — not a green build, actual rendering:
+  1. **Docket (`/#docket`) renders real chain data** — all 11 cases (case_000000 through
+     case_000010) live from Bradbury, resolved cases with amber `DEVELOPER` chips,
+     unresolved with muted `AWAITING VERDICT` chips (screenshot taken).
+  2. **Resolved case renders its verdict + reasoning** — `/case/case_000009` shows the
+     `developer` verdict with the full on-chain reasoning text, evidence (incident URL,
+     cost, filer), and the `agent_config` parsed into the labelled grid.
+  3. **Filing form (`/file`) loads completely** — all fields, both toggles, both chip
+     sets, trust-boundary/system-prompt/context fields, and the submit button correctly
+     disabled with the "install MetaMask" notice (no wallet in the verification browser).
+- Bonus, recorded for 6d's ledger: the stuck run-2 filing tx from Checkpoint 6 landed as
+  **case_000010**; the Checkpoint 6 watcher (still running at that point) submitted
+  `investigate` with 10 rotations (tx `0x9638a69a1f20404584a3ac0bbe538dd8fde37cd14663d32c
+  33c784dbcc688be9`) and it resolved **`developer`** — a **fourth** resolved rehearsal
+  run, same URL/config/damage. Verdict stability across resolved runs is now **4/4
+  `developer`**.
+
+
+## [TASK 7 / 7d] Application draft — 5 Sep
+
+- `docs/SUBMISSION.md` written: a paste-ready draft of the **Onchain Justice** track
+  application — one-liner, problem, solution (with the verdict-only equivalence principle
+  as the design spine), the three GenLayer-fit arguments, what's built (all live), the
+  proof section (case_000009 + the 4/4 verdict-stability result), a demo walkthrough, a
+  deliberate honesty section (no anti-spam by design; Bradbury capacity; genvm-lint false
+  positive; CLI gap), and the full link list.
+- **Nothing was submitted anywhere** — the file is headed "DRAFT — internal" and stays
+  local to the repo. Submission is the PM's call.
+
+
+## [TASK 7 / 7e] Link ledger — 5 Sep
+
+Every link a reviewer or judge needs, in one place (also in the README's Live table and
+`docs/SUBMISSION.md`):
+
+| What | Link |
+|---|---|
+| Public repository | https://github.com/PratikshaGayen/injection-court |
+| Live frontend | https://injection-court.vercel.app |
+| Public docket (live chain data) | https://injection-court.vercel.app/#docket |
+| Intelligent Contract | `0x7b8f4F1a73ceBb088880F94815E76C10f4c0C306` (testnet-bradbury) |
+| Contract explorer | https://explorer-bradbury.genlayer.com/address/0x7b8f4F1a73ceBb088880F94815E76C10f4c0C306 |
+| Injected demo page | https://pratikshagayen.github.io/injection-court/ |
+| Resolved proof case (frontend) | https://injection-court.vercel.app/case/case_000009 |
+| Resolved proof case (contract read) | `get_case("case_000009")` → resolved, `developer`, full reasoning on-chain |
+| Investigate tx for the proof case | `0x42378ff8448fd72d31f91d8fb258e9e2e6e33eac24ee22cf5af3c95956a7686d` |
+| Rehearsal harness | `scripts/rehearse_case.py` in the repo |
+| Application draft (not submitted) | `docs/SUBMISSION.md` |
+| Project plan (preserved) | `docs/PLAN.md` |
+
+Verified live during this task: the frontend URL serves the deployed build against the
+Bradbury contract (docket populated, case detail rendering, filing form loading); the
+demo page serves with both payload channels; the contract answers `list_cases`/
+`get_case` publicly.
+
+
+---
+
+## [Checkpoint 7] Submission package — 5 Sep
+
+STATUS: COMPLETE — 7a through 7e done as one batched run (rule 3 suspended for this task
+per the PM). **Nothing was submitted anywhere: no form, no post, no email.** The
+application exists only as the `docs/SUBMISSION.md` draft.
+
+### Done
+
+- **7a — repository**: public at https://github.com/PratikshaGayen/injection-court
+  (created during Checkpoint 6 as the Pages dependency, per the PM's accepted decision);
+  final pre-submission review repeated — working tree clean, everything pushed,
+  `frontend/.env.local` untracked + gitignored, full-history and working-tree secrets
+  sweep clean. The disposable Bradbury keys exist only in process memory, never on disk,
+  never in git.
+- **7b — README rewritten** (order respected: before 7c): the internal plan moved
+  verbatim to `docs/PLAN.md`; the new `README.md` is the judge-facing project README —
+  argument kept (problem, four-verdict taxonomy, why-GenLayer, why-no-money), live-links
+  table, runnable setup steps, and the known-limitations section the PM asked for,
+  **including the Bradbury capacity caveat in substance from Checkpoint 6** ("it is the
+  network, not the contract", retry guidance, 4/4 stable verdicts when rounds complete),
+  alongside the anti-spam-by-design, genvm-lint false-positive, and CLI `--args`
+  limitations.
+- **7c — frontend deployed and verified live**: Vercel production deploy with the six
+  Bradbury `NEXT_PUBLIC_*` values added to the project's production environment first
+  (they are build-time inlined; a deploy without them would have shown an empty default
+  site). **Live URL: https://injection-court.vercel.app**. Verified in a real browser —
+  docket renders all 11 real cases with verdict chips; `/case/case_000009` renders the
+  `developer` verdict, full on-chain reasoning, evidence, and the parsed config grid;
+  `/file` renders the complete filing form with the wallet gate working. Screenshots
+  taken of the docket and hero. Not a green-build claim.
+- **7d — application drafted**: `docs/SUBMISSION.md`, Onchain Justice track, headed
+  DRAFT — internal. Paste-ready sections: one-liner, problem, solution, GenLayer fit,
+  what's built, proof (case_000009 + 4/4 verdict stability), demo walkthrough, honesty
+  section, links.
+- **7e — link ledger**: consolidated in the 7e sub-entry above, the README's Live table,
+  and the end of `docs/SUBMISSION.md`. Every link verified live during this task.
+- **Bonus stability evidence**: the long-stuck run-2 filing landed as `case_000010`, the
+  Checkpoint 6 watcher investigated it, and it resolved `developer` — verdict stability
+  across resolved runs is now **4/4**, recorded in the 7c sub-entry.
+
+### Commands run and their real output
+
+- `git status --short` / `git grep` secrets sweep / `git check-ignore frontend/.env.local`
+  -> clean (7a).
+- `git mv README.md docs/PLAN.md` + new `README.md` -> committed, pushed (7b).
+- `npm run build` -> success, all routes (7c).
+- `vercel whoami` -> authenticated as `pratikshagayen`; `vercel link --project
+  injection-court --yes` -> linked; `vercel env ls production` -> initially **empty**;
+  six `vercel env add <NAME> production` calls -> all present on re-list (7c).
+- `vercel --prod --yes` -> "Production … Aliased https://injection-court.vercel.app —
+  ✓ Ready in 2m" (7c).
+- Browser verification against the live URL -> docket populated (11 cases), resolved case
+  rendering verdict + reasoning, filing form complete with disabled-submit wallet gate
+  (7c).
+- `git mv`/commit/push cycles for 7b, 7c, 7d, 7e -> all pushed to `origin/master`.
+
+### Decisions I had to make
+
+- **Committed the README before the deploy with the intended alias**
+  (`injection-court.vercel.app`), then set that exact alias on the deploy — so the
+  README's URL was true the moment the site went live, and 7b preceded 7c as required.
+  Had the alias been taken, the README row would have been corrected in the 7e commit.
+- **Added the six env vars to Vercel's production environment explicitly** rather than
+  relying on `.env.local` — `.env.local` does not deploy, and without them the inlined
+  build constants would have defaulted to the Studio RPC with no contract address.
+- **Kept `docs/control.html`** in the repo — it is referenced by the docket's own history
+  (case_000004 points at it) and by the Checkpoint 6 diagnosis; deleting it would 404 a
+  case the contract references permanently.
+- **Left the docket's diagnostic cases in place** (per Checkpoint 6, accepted by the PM).
+
+### BLOCKED
+
+- None.
+
+### Ready for
+
+- **PM review of `docs/SUBMISSION.md`, then the PM's submission decision.** Per the
+  standing instruction, no submission action was taken by the agent — that call and act
+  are the PM's.
+- If the PM wants any content change in the application or README before submitting, the
+  edit surface is small and self-contained.
+
+AWAITING PM REVIEW.
+
+---
