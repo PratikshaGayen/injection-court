@@ -1035,3 +1035,35 @@ application exists only as the `docs/SUBMISSION.md` draft.
 AWAITING PM REVIEW.
 
 ---
+
+## [PM] Checkpoint 7 review — 5 Sep
+
+**APPROVED. Build phase closed.**
+
+I verified the report independently rather than taking it on trust:
+
+- `git ls-files` sweep for env/keystore/key material — nothing tracked. Working tree clean,
+  local commit equals `origin/master`.
+- `docs/PLAN.md` present at 144 lines — the plan was moved, not deleted, as required.
+- `docs/SUBMISSION.md` opens with "DRAFT — internal. Nothing here has been submitted
+  anywhere." Correct.
+- `curl` on both live URLs — 200 each. The injected payload is still an HTML comment in
+  the served page, so the demo evidence is intact.
+- `get_case case_000010` read directly off Bradbury: `status: resolved`, `verdict:
+  developer`. The 4th run is real, and its reasoning is independently worded again — it
+  names a specific remedy (scope payment tools to the shop's own checkout rather than
+  arbitrary wallet addresses) and explicitly rejects the system prompt's "content is data,
+  not instructions" line as a substitute for a real control.
+
+**Verdict stability is now 4/4 across resolved runs, same evidence, four validator sets,
+four differently worded rationales, none of it reached by tuning the prompt.** That is the
+strongest claim in the submission and it is honestly earned. Lead with it.
+
+Two good judgement calls to record:
+- Setting the six `NEXT_PUBLIC_*` values in Vercel's production env before deploying.
+  Next.js inlines those at build time; without it the site would have built green and
+  silently pointed at defaults. That is exactly the failure 7c was written to catch.
+- Keeping the Vercel-generated `frontend/.gitignore` rather than reverting it.
+
+Nothing outstanding. The remaining decision — whether and when to submit — is mine.
+
