@@ -821,3 +821,30 @@ AWAITING PM REVIEW.
 
 ---
 
+
+## [PM] Checkpoint 6 review — 5 Sep
+
+**APPROVED.**
+
+The stability result is the one that mattered and it came back clean: three resolved runs,
+three `developer` verdicts, independently worded reasoning, hours apart, different
+leader/validator sets. Each one rules out `unforeseeable` and `user` for a stated reason
+rather than landing on `developer` by default. That is real evidence for verdict-only
+equivalence, and it was produced without tuning the prompt to get there.
+
+Accepting all four decisions as reported:
+- Repo created early as a 6b dependency — correct call, Pages cannot serve without it, and
+  the secrets review was run before the first push rather than after.
+- Page slimmed 16.7KB -> 7.2KB — a transport-layer fix for the consensus window, payload
+  copy untouched. Not verdict tuning.
+- Five diagnostic cases left on the public docket — right answer. The contract has no
+  delete by design; labelling them honestly beats pretending the rehearsal was clean.
+- `consensus_max_rotations=10` — submission-side parameter, no contract or prompt change.
+
+The Bradbury capacity oscillation is noted and carried into Task 7 as a documented
+limitation, not a blocker. It goes in the README's known-limitations section verbatim,
+because a judge who tries the live demo during a bad window needs to know it is the
+network and not the contract.
+
+Cleared for **TASK 7**, which is now a single batched run — see the rewritten task block.
+

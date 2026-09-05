@@ -212,25 +212,64 @@ in a real browser against real contract data.
 
 ---
 
-## TASK 7 — Submission package
+## TASK 7 — Submission package (BATCHED — run 7a through 7e in one go)
 
-7a. **Public GitHub repository.** Create it with `gh repo create`, push, and confirm it is
-    public. No secrets, no private keys, no `.env.local`. Review what you are about to push
-    before you push it.
+**Standing rule 3 is suspended for this task only.** Do not stop between 7a and 7e. Work
+straight through, appending a short sub-entry to `PROGRESS.md` as each one lands (so I can
+follow along, and so nothing is lost if you're interrupted), then write the single
+Checkpoint 7 report at the end. Rule 5 still applies in full: a real blocker still stops
+you immediately.
 
-7b. **Rewrite `README.md` as a project README** — the current one is the internal plan. Keep
-    the argument, and add: what this is, the live links, setup steps someone can actually
-    follow, and the known limitations (no anti-spam/filing fee, by design; `genvm-lint` flags
-    the equivalence-principle pattern as a false positive; `genlayer write --args` cannot pass
-    JSON-shaped strings). Do not delete the plan — move it to `docs/PLAN.md`.
+**Order matters.** 7b before 7c — the frontend deploy should go out with the rewritten
+README already in the repo. 7e is last because it collects what the earlier steps produce.
 
-7c. **Deploy the frontend** (Vercel CLI is installed) and record the live URL. It must point
-    at the deployed contract on Bradbury.
+**State as of the Checkpoint 6 approval:**
+- Repo already exists and is **public**: `https://github.com/PratikshaGayen/injection-court`
+  (remote `origin` set, default branch `master`).
+- GitHub Pages is **live and built** from `master:/docs`:
+  `https://pratikshagayen.github.io/injection-court/`
+- The secrets review already ran before the first push. 7a is now a re-check of the final
+  state, not a first pass.
 
-7d. **Draft the project application** for the **Onchain Justice** track. Draft only — the PM
-    reviews before anything is submitted.
+7a. **Final pre-submission review of the repo.** Re-run the secrets scan over the working
+    tree and the full history, now that Task 6 has added files. Confirm: no private keys,
+    no `.env.local`, no keystore material, `.env.example` present and harmless. Confirm the
+    repo still reads as public to a logged-out visitor.
 
-7e. **Collect every link:** repo, live frontend, contract address + explorer link, the demo
-    injected page, and the resolved case that proves the whole thing works.
+7b. **Rewrite `README.md` as a project README** — the current one is the internal plan.
+    Move the plan to `docs/PLAN.md` unchanged; do not delete it. The new README keeps the
+    argument (whose fault was that?) and adds: what this is, the live links, setup steps
+    someone can actually follow, and a **known limitations** section covering, at minimum:
+    - No anti-spam or filing fee — deliberate, money movement is outside the locked scope.
+    - `genvm-lint` flags the equivalence-principle pattern as a false positive (the
+      boilerplate's own passing example trips it too).
+    - `genlayer write --args` cannot pass JSON-shaped strings; use the SDK or the frontend.
+    - **testnet-bradbury capacity oscillates** — carry the Checkpoint 6 caveat over. Say
+      plainly that rounds can park in timeout states during busy windows, that this is the
+      network and not the contract, and what a healthy round looks like (roughly 1–7 min).
+    - The five diagnostic cases on the public docket are labelled rehearsal artifacts; the
+      contract has no delete by design.
+    Also state the verdict-stability result: three independent resolved runs on the same
+    evidence, three `developer` verdicts, reasoning worded differently each time.
 
-**-> CHECKPOINT 7. Final report and stop. Do not submit anything.**
+7c. **Deploy the frontend** (Vercel CLI 58.5.1 is installed) and record the live URL. It
+    must point at the deployed contract on Bradbury — set the `NEXT_PUBLIC_*` variables in
+    the Vercel project, do not commit `.env.local`. After deploying, **actually load the
+    live URL** and confirm all three routes work against real chain data: the docket lists
+    real cases, a resolved case renders its verdict and reasoning, and the filing form
+    loads. A deploy that builds but shows an empty docket is not done.
+
+7d. **Draft the project application** for the **Onchain Justice** track. Draft it into
+    `docs/SUBMISSION.md` so I can edit it in place. Lead with what the contract actually
+    does that a normal contract cannot: fetch a live third-party page and reach consensus
+    on a judgement about it. Use the real case as the proof. **Draft only.**
+
+7e. **Collect every link** into a single block at the end of the Checkpoint 7 report and
+    also at the top of `docs/SUBMISSION.md`: repo, live frontend, contract address plus
+    explorer link, the demo injected page, and the specific resolved case that proves the
+    whole thing works end to end.
+
+**-> CHECKPOINT 7. Final report and stop.**
+
+**Do not submit anything, anywhere.** Do not open the submission form, do not post, do not
+email. The draft is for me to review. Submission is my call, not yours.
