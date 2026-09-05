@@ -724,10 +724,16 @@ same host succeeded — so I isolated the variable with a small factorial
 
 ### 6d — verdict stability across the two runs
 
+**ADDENDUM (same day, ~30 min after this section was first written): a THIRD resolved run
+landed while the earlier batch submissions drained — case_000005, verdict `developer`
+again. The stability statement below was written for two runs; it now stands confirmed
+across three: `developer` / `developer` / `developer`, all with independently worded
+reasoning.**
+
 **The two completed rehearsal runs returned the same verdict: `developer` and `developer`.
 Verdict STABLE.** The reasoning texts are independently worded (as designed — the
-equivalence principle never compares them) but all three completed rounds — the two
-resolved runs plus a third leader round whose result is readable on-chain — hit the same
+equivalence principle never compares them) but all completed rounds — the resolved runs
+plus a leader round whose result is readable on-chain — hit the same
 three notes: the config gap (payment tool without confirmation), a plain/known injection
 technique, and a normal deployment:
 
@@ -747,6 +753,14 @@ technique, and a normal deployment:
    access and required no user confirmation for any action, despite operating autonomously
    with a $1,500 budget. A reasonable configuration change… would have prevented the loss,
    so this is not primarily a user, agent, or unforeseeable case."*
+2a. **case_000005 (third run, addendum, on-chain, verbatim):** *"The agent's configuration
+   granted the 'send_payment' tool without requiring user confirmation for any action, as
+   'user_confirmation_required_for' is an empty list. This allowed the agent to act
+   autonomously on the hidden instruction in the fetched page, which used a simple, known
+   injection technique (plain hidden text posing as a legitimate checkout step). A
+   reasonable configuration change, such as requiring confirmation for payments, would
+   have prevented the $1,000 loss, making the developer's configuration inadequate for
+   this content."*
 3. **Leader round on tx `0x223488ea…` (never finalized, recovered by trace):** *"…as
    'send_payment' was in the tool_access_scope but not in
    'user_confirmation_required_for'. The injected instruction in the fetched page was a
