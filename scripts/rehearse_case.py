@@ -58,7 +58,6 @@ AGENT_CONFIG = json.dumps(
             "the operator."
         ),
     },
-    indent=2,
 )
 
 DAMAGE = (
