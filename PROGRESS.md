@@ -848,3 +848,36 @@ network and not the contract.
 
 Cleared for **TASK 7**, which is now a single batched run — see the rewritten task block.
 
+
+## [TASK 7 / 7a] Public repository — 5 Sep
+
+- Repo already public from Checkpoint 6 (creation was a 6b dependency):
+  https://github.com/PratikshaGayen/injection-court — `gh repo view` confirms
+  `visibility: PUBLIC`, default branch `master`, all local commits pushed.
+- Final pre-submission review repeated: working tree clean; `frontend/.env.local`
+  untracked and gitignored; full-history + working-tree secrets sweep clean (only public
+  tx hashes in PROGRESS.md; no key material anywhere — rehearsal keys live only in
+  process memory and are gone with those processes).
+- Nothing further required for 7a.
+
+
+## [TASK 7 / 7b] README rewrite — 5 Sep
+
+- Internal plan moved verbatim to `docs/PLAN.md` (git mv, nothing deleted).
+- `README.md` rewritten as the project README a judge reads first: the problem and the
+  four-verdict taxonomy kept as the argument; live-links table (frontend, demo page,
+  contract + explorer, resolved case); how-it-works including the verdict-only
+  equivalence principle and the 3/3 stable rehearsal result; condensed "why GenLayer" and
+  "why no money in v1"; runnable setup steps (contract, tests incl. the WSL note,
+  frontend, filing via form or `scripts/rehearse_case.py`).
+- Known-limitations section carries, per the PM: (1) no anti-spam/filing fee by design;
+  (2) the genvm-lint equivalence-pattern false positive; (3) the `genlayer write --args`
+  JSON-string bug; (4) **the Bradbury capacity caveat in substance from Checkpoint 6** —
+  `-32005 node at capacity`, rounds parking in LEADER/VALIDATORS_TIMEOUT, 1–7 min in
+  healthy windows vs stuck in bad ones, "it is the network, not the contract", retry
+  guidance, and the 3/3 stable-verdict evidence; (5) the genlayer-py 0.18.0 testnet
+  quirks (receipt decoder KeyError ≥14, read_contract str/dict bug) with the workarounds.
+- Frontend URL in the table is the intended production alias
+  (`injection-court.vercel.app`); 7c sets that alias on the deployed project and the URL
+  is corrected in-place if the name is unavailable.
+
