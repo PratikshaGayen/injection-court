@@ -507,3 +507,101 @@ on Genlayer Bradbury Testnet.**
 **Coding agent: proceed to TASK 5 (frontend). Stop at Checkpoint 5.**
 
 ---
+
+## [Checkpoint 5] Frontend — 5 Sep
+
+STATUS: COMPLETE
+
+### Done
+Replaced the boilerplate's football-betting UI entirely. The three surfaces
+`README.md` locks, and nothing else:
+
+- **Public docket** (`/#docket`, `components/court/Docket.tsx`) — every case from
+  `list_cases()`, newest first, with verdict chips. Loading, error and empty states all
+  written; the empty state invites a filing rather than just reporting emptiness.
+- **Case detail** (`/case/[id]`) — verdict, reasoning, evidence (incident URL, cost, filer),
+  and the submitted `agent_config` parsed into a readable grid. Unresolved cases get a
+  "Send to the validators" action with a staged deliberation panel for the ~60s round.
+- **Filing form** (`/file`) — builds the Option C `agent_config` from toggles and chip sets
+  rather than making anyone hand-write JSON, then calls `file_case`.
+
+Design direction (brief asked for heavy animation and visual impact):
+- **The hero is evidence, not a headline.** An ordinary product listing sits dim, and the
+  injected instruction hidden inside it ignites in sequence — the payload is in the markup
+  from the first frame, exactly as on a real page. The project's thesis is that the attack
+  is invisible until someone looks, so the reader experiences the reveal instead of being
+  told about it.
+- **Colour is the taxonomy.** The page is near-monochrome ink; the only saturated colour in
+  the system is verdict colour (amber developer / teal user / violet agent / desaturated
+  slate unforeseeable — the "nobody is at fault" verdict deliberately does not glow). This
+  pays off on the case page: the missing protections in `agent_config` render in the same
+  amber as the `developer` verdict, so the evidence visually explains the ruling.
+- **Type:** Martian Mono for display (court transcripts and payloads are both monospaced —
+  the un-obvious choice for a court, where the default would be a high-contrast serif),
+  Newsreader for prose. Mono states the record; the serif explains it.
+- **Motion**, all hand-rolled in `lib/hooks/useScrollFx.ts` with no animation dependency:
+  IntersectionObserver reveals, an rAF scroll-scrub driving the pipeline spine and the
+  margin rule, SVG `stroke-dashoffset` self-drawing verdict marks, staggered docket rows,
+  and a load-in choreography on the hero. `prefers-reduced-motion` short-circuits all of it.
+
+### Commands run and their real output
+- `npx tsc --noEmit` -> **clean**, no output.
+- `npm run build` -> **success**. All four routes emitted (`/`, `/file`, `/case/[id]`,
+  `/_not-found`). Compiled in 5.5s.
+- `npm run dev` + browser verification against the live contract:
+  - Docket renders **real cases from Bradbury** — `case_000001` with its real amber
+    `developer` chip, `case_000000` awaiting verdict.
+  - `/case/case_000001` shows the real on-chain verdict and the full reasoning text from
+    Task 4.
+  - Config grid correctly parses the on-chain `agent_config`: three missing protections
+    (`no`, `no`, `none`) all rendering in `rgb(240, 164, 75)` — the same amber as the
+    verdict label.
+  - `/file` renders all 8 labelled fields, 2 toggles, 10 chips, and correctly disables
+    submit with a wallet notice when MetaMask is absent.
+  - Verdict marks confirmed drawn (`stroke-dashoffset: 0px`), fonts confirmed loaded
+    (Martian Mono / Newsreader).
+
+### Decisions I had to make
+- Deleted the boilerplate's betting components (`BetsTable`, `Leaderboard`, `CreateBetModal`,
+  `AccountPanel`, `Navbar`, `Logo`, `AddressDisplay`, `FootballBets.ts`, `useFootballBets.ts`)
+  rather than leaving dead code in a repo the panel will read.
+- Wrote the motion primitives by hand instead of adding GSAP or Framer Motion — full control
+  over the choreography, no dependency weight, nothing extra to audit at submission.
+- Pointed the wallet/network config at Bradbury purely through `.env.local`, so no boilerplate
+  client code needed editing. `.env.local` is gitignored; `.env.example` carries the same
+  values since they are all public (`NEXT_PUBLIC_*`, a public RPC, the deployed address).
+- Fixed one real layout defect found by measuring rather than eyeballing: the display face
+  was rendering at 120px in a 582px column and wrapping the hero question to four lines.
+  Reduced the clamp so "Whose fault / was that?" holds two.
+
+### Note for Task 6 / 7
+- The hero exhibit's copy is effectively a ready-made script for the Task 6 demo page — the
+  injected listing it shows is exactly the kind of page that needs hosting at a live URL.
+- The browser pane used for verification stops painting when hidden (rAF and scroll events
+  stop firing), which produced blank screenshots mid-review. Not a site defect — confirmed by
+  reading computed styles directly. Worth knowing if the demo is driven from a hidden window.
+
+### BLOCKED
+- None.
+
+### Ready for
+- TASK 6 (demo page + rehearsal).
+
+AWAITING PM REVIEW.
+
+---
+
+## [PM] Checkpoint 5 review — 5 Sep
+
+**APPROVED.** Three surfaces, no scope creep, and the design earns its keep rather than
+decorating: reserving all saturated colour for the verdict taxonomy means the case page's
+config grid explains the ruling visually, which is an argument for the project rather than
+styling on top of it. The hero-as-evidence gamble is the right one — it makes the reader do
+what the validators do.
+
+Verified against real chain state rather than mocks, which is what makes this checkpoint
+worth signing off.
+
+**Coding agent: proceed to TASK 6 (demo). Stop at Checkpoint 6.**
+
+---
