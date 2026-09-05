@@ -20,11 +20,12 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
 
-from genlayer_py import create_account
+from genlayer_py import create_account, create_client
 from genlayer_py.chains import testnet_bradbury
 from genlayer_py.types import TransactionStatus
 
@@ -66,11 +67,15 @@ DAMAGE = (
 
 ENV = {**os.environ, "PYTHONIOENCODING": "utf-8"}
 
+# The CLI is an npm .cmd shim on Windows; subprocess needs cmd.exe to run it.
+_genlayer = shutil.which("genlayer") or "genlayer"
+GENLAYER_CMD = ["cmd", "/c", _genlayer] if _genlayer.lower().endswith((".cmd", ".bat")) else [_genlayer]
+
 
 def cli(*args: str) -> str:
     """Run a genlayer CLI command, return stdout. Raises on non-zero exit."""
     proc = subprocess.run(
-        ["genlayer", *args], capture_output=True, text=True, encoding="utf-8", env=ENV
+        GENLAYER_CMD + list(args), capture_output=True, text=True, encoding="utf-8", env=ENV
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -78,6 +83,42 @@ def cli(*args: str) -> str:
             f"{proc.stdout}\n{proc.stderr}"
         )
     return proc.stdout
+
+
+def is_transient_rpc_limit(err_text: str) -> bool:
+    return "-32005" in err_text or "rate limit" in err_text.lower()
+
+
+def cli_retry(*args: str, attempts: int = 8, delay: float = 5.0) -> str:
+    """genlayer CLI call, retrying transient node-capacity rejections."""
+    for i in range(attempts):
+        try:
+            return cli(*args)
+        except RuntimeError as e:
+            if not is_transient_rpc_limit(str(e)):
+                raise
+            print(
+                f"[run] RPC at capacity during `{' '.join(args[:3])}`, retry {i + 1}/{attempts} in {delay:.0f}s",
+                flush=True,
+            )
+            time.sleep(delay)
+    raise RuntimeError(f"still rate-limited after {attempts} attempts: {' '.join(args[:3])}")
+
+
+def submit_write_retry(client, fn_name: str, acct, cargs: list, what: str) -> str:
+    """write_contract submission, retrying transient node-capacity rejections."""
+    for i in range(8):
+        try:
+            return client.write_contract(CONTRACT, fn_name, account=acct, args=cargs)
+        except Exception as e:  # noqa: BLE001 - re-raised unless transient
+            if not is_transient_rpc_limit(str(e)):
+                raise
+            print(
+                f"[run] RPC at capacity during {fn_name} submit, retry {i + 1}/8 in 5s",
+                flush=True,
+            )
+            time.sleep(5)
+    raise RuntimeError(f"still rate-limited after 8 attempts submitting {fn_name}")
 
 
 def cli_listed_case_ids() -> set:
@@ -127,7 +168,7 @@ def main() -> int:
     acct = create_account()
     print(f"[run] filer address: {acct.address}", flush=True)
 
-    out = cli("account", "send", acct.address, FUND_WEI, "--account", "session-deployer")
+    out = cli_retry("account", "send", acct.address, FUND_WEI, "--account", "session-deployer")
     print(f"[run] funding sent (0.5 GEN from session-deployer): {out.strip()[:200]}", flush=True)
     time.sleep(5)  # let the funding tx land before filing
 
@@ -137,12 +178,7 @@ def main() -> int:
     print(f"[run] cases before filing: {sorted(before)}", flush=True)
 
     t0 = time.perf_counter()
-    file_tx = client.write_contract(
-        CONTRACT,
-        "file_case",
-        account=acct,
-        args=[DEMO_URL, AGENT_CONFIG, DAMAGE],
-    )
+    file_tx = submit_write_retry(client, "file_case", acct, [DEMO_URL, AGENT_CONFIG, DAMAGE], "file_case")
     submit_secs = time.perf_counter() - t0
     print(f"[run] file_case submitted in {submit_secs:.1f}s, tx {file_tx}", flush=True)
 
@@ -158,7 +194,7 @@ def main() -> int:
     print(f"[run] case id: {case_id}", flush=True)
 
     t0 = time.perf_counter()
-    inv_tx = client.write_contract(CONTRACT, "investigate", account=acct, args=[case_id])
+    inv_tx = submit_write_retry(client, "investigate", acct, [case_id], "investigate")
     inv_submit_secs = time.perf_counter() - t0
     print(f"[run] investigate submitted in {inv_submit_secs:.1f}s, tx {inv_tx}", flush=True)
 
