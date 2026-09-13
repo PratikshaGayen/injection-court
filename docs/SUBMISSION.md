@@ -105,6 +105,9 @@ land on-chain:
 
 ## Demo walkthrough (if invited to show it)
 
+A full shot-by-shot recording script for the YouTube submission video is at
+`docs/VIDEO_GUIDE.md`.
+
 1. Open the [demo page](https://pratikshagayen.github.io/injection-court/) — it reads as
    an ordinary product listing. View source: the instruction is there, hidden the way
    real attacks hide it.
