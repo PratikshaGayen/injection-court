@@ -140,7 +140,7 @@ export default function CasePage() {
   const { isConnected, connectWallet, isMetaMaskInstalled } = useWallet();
   const { mutateAsync, isPending } = useInvestigate();
   const head = useReveal<HTMLDivElement>();
-  const evidence = useReveal<HTMLDivElement>();
+  const evidence = useReveal<HTMLDivElement>(0.18, [c?.id]);
 
   async function onInvestigate() {
     if (!caseId) return;

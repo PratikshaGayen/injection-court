@@ -12,7 +12,8 @@ function prefersReduced() {
  * One-shot: things do not un-reveal when you scroll back up.
  */
 export function useReveal<T extends HTMLElement = HTMLDivElement>(
-  threshold = 0.18
+  threshold = 0.18,
+  deps: unknown[] = []
 ) {
   const ref = useRef<T | null>(null);
 
@@ -34,7 +35,8 @@ export function useReveal<T extends HTMLElement = HTMLDivElement>(
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [threshold]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threshold, ...deps]);
 
   return ref;
 }
